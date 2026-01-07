@@ -1,36 +1,59 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
+import { useWorkout } from '../../context/WorkoutContext';
 
 export default function Dashboard() {
+  const router = useRouter();
+  const { history } = useWorkout();
+  const latest = history[history.length - 1];
+
   return (
     <ScrollView style={styles.container}>
-      <Stack.Screen options={{ title: 'Twój Dziennik' }} />
-      
-      {/* Sekcja Podsumowania */}
+      <Stack.Screen options={{ title: 'Twoj Dziennik' }} />
+
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Ostatni trening</Text>
-        <Text style={styles.cardSubtitle}>Klatka + Triceps - Poniedziałek</Text>
-        <View style={styles.statsRow}>
-          <Text style={styles.statItem}>🔥 450 kcal</Text>
-          <Text style={styles.statItem}>⏱️ 65 min</Text>
-          <Text style={styles.statItem}>💪 12 ton</Text>
-        </View>
+        {latest ? (
+          <>
+            <Text style={styles.cardSubtitle}>{latest.exercise}</Text>
+            <Text style={styles.cardSubtitle}>
+              {new Date(latest.date).toLocaleDateString()}
+            </Text>
+          </>
+        ) : (
+          <Text style={styles.cardSubtitle}>Brak zapisow</Text>
+        )}
       </View>
 
-      {/* Szybkie Akcje */}
-      <TouchableOpacity style={styles.startButton}>
+      <TouchableOpacity style={styles.startButton} onPress={() => router.push('/workout/active')}>
         <Text style={styles.startButtonText}>ROZPOCZNIJ NOWY TRENING</Text>
       </TouchableOpacity>
 
-      {/* Metryki Ciała - Podgląd */}
-      <View style={styles.metricsContainer}>
-        <Text style={styles.sectionTitle}>Postępy sylwetkowe</Text>
-        <View style={styles.metricBox}>
-          <Text>Waga: 82.5 kg</Text>
-          <Text style={styles.trendUp}>+0.5 kg (tydz.)</Text>
-        </View>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Zapisane treningi</Text>
+        {history.length === 0 ? (
+          <View style={styles.card}>
+            <Text>Brak zapisanych treningow</Text>
+          </View>
+        ) : (
+          history
+            .slice(-5)
+            .reverse()
+            .map((entry) => (
+              <View key={entry.id} style={styles.card}>
+                <Text style={styles.cardTitle}>{entry.exercise}</Text>
+                <Text style={styles.cardSubtitle}>
+                  {new Date(entry.date).toLocaleDateString()}
+                </Text>
+                {entry.sets.map((set, index) => (
+                  <Text key={`${entry.id}-${index}`} style={styles.historySet}>
+                    Seria {index + 1}: {set.reps || '-'} x {set.weight || '-'} kg
+                  </Text>
+                ))}
+              </View>
+            ))
+        )}
       </View>
     </ScrollView>
   );
@@ -38,15 +61,12 @@ export default function Dashboard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f4f4f4', padding: 15 },
-  card: { backgroundColor: '#fff', padding: 20, borderRadius: 15, marginBottom: 20, elevation: 3 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold' },
-  cardSubtitle: { color: '#666', marginVertical: 5 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  statItem: { fontWeight: '600' },
+  section: { marginTop: 20 },
+  card: { backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: 'bold' },
+  cardSubtitle: { color: '#666', marginTop: 4 },
   startButton: { backgroundColor: '#007AFF', padding: 18, borderRadius: 12, alignItems: 'center' },
   startButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', marginVertical: 15 },
-  metricsContainer: { marginBottom: 30 },
-  metricBox: { backgroundColor: '#fff', padding: 15, borderRadius: 10, flexDirection: 'row', justifyContent: 'space-between' },
-  trendUp: { color: 'green', fontWeight: 'bold' }
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
+  historySet: { marginTop: 6 },
 });
