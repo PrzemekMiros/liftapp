@@ -6,6 +6,17 @@ import { useWorkout } from '../../context/WorkoutContext';
 type WorkoutSet = { reps: string; weight: string };
 type WorkoutExercise = { name: string; sets: WorkoutSet[] };
 
+const COLORS = {
+  background: '#332e45',
+  surface: '#3d3653',
+  accent: '#54b286',
+  text: '#f5f2ff',
+  muted: '#c7c1d6',
+  input: '#49405f',
+  border: '#4f4667',
+  error: '#8a0101',
+};
+
 export default function ActiveWorkout() {
   const router = useRouter();
   const { recordWorkout, exercises, addExercise } = useWorkout();
@@ -14,6 +25,7 @@ export default function ActiveWorkout() {
   const [customExercise, setCustomExercise] = useState('');
   const [sets, setSets] = useState<WorkoutSet[]>([{ reps: '', weight: '' }]);
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
+  const [error, setError] = useState('');
 
   const bodyParts = useMemo(
     () => Array.from(new Set(exercises.map((item) => item.bodyPart))).sort(),
@@ -45,12 +57,15 @@ export default function ActiveWorkout() {
 
   const addExerciseToWorkout = () => {
     if (!selectedExercise) {
+      setError('Wybierz cwiczenie przed dodaniem serii.');
       return;
     }
     const normalizedSets = normalizeSets(sets);
     if (normalizedSets.length === 0) {
+      setError('Wprowadz serie przed dodaniem cwiczenia.');
       return;
     }
+    setError('');
     setWorkoutExercises((prev) => [
       ...prev,
       { name: selectedExercise, sets: normalizedSets },
@@ -62,8 +77,10 @@ export default function ActiveWorkout() {
   const addCustomExerciseToBase = () => {
     const trimmedName = customExercise.trim();
     if (!trimmedName || !selectedBodyPart) {
+      setError('Podaj nazwe cwiczenia i wybierz partie ciala.');
       return;
     }
+    setError('');
     addExercise({ name: trimmedName, bodyPart: selectedBodyPart });
     setSelectedExercise(trimmedName);
     setCustomExercise('');
@@ -79,8 +96,10 @@ export default function ActiveWorkout() {
       ? [...workoutExercises, currentExercise]
       : workoutExercises;
     if (exercisesToSave.length === 0) {
+      setError('Dodaj przynajmniej jedno cwiczenie do treningu.');
       return;
     }
+    setError('');
     recordWorkout({
       date: new Date().toISOString(),
       exercises: exercisesToSave,
@@ -104,6 +123,7 @@ export default function ActiveWorkout() {
             onPress={() => {
               setSelectedBodyPart(part);
               setSelectedExercise(null);
+              setError('');
             }}
           >
             <Text style={[styles.choiceText, selectedBodyPart === part && styles.choiceTextActive]}>
@@ -124,7 +144,10 @@ export default function ActiveWorkout() {
                   styles.choiceButton,
                   selectedExercise === item.name && styles.choiceButtonActive,
                 ]}
-                onPress={() => setSelectedExercise(item.name)}
+                onPress={() => {
+                  setSelectedExercise(item.name);
+                  setError('');
+                }}
               >
                 <Text
                   style={[
@@ -143,8 +166,14 @@ export default function ActiveWorkout() {
             <TextInput
               style={styles.input}
               placeholder="Nazwa cwiczenia"
+              placeholderTextColor={COLORS.muted}
               value={customExercise}
-              onChangeText={setCustomExercise}
+              onChangeText={(value) => {
+                setCustomExercise(value);
+                if (error) {
+                  setError('');
+                }
+              }}
             />
             <TouchableOpacity style={styles.addExerciseButton} onPress={addCustomExerciseToBase}>
               <Text style={styles.addExerciseText}>Dodaj do bazy</Text>
@@ -164,15 +193,27 @@ export default function ActiveWorkout() {
                   style={styles.setInput}
                   placeholder="powt."
                   keyboardType="number-pad"
+                  placeholderTextColor={COLORS.muted}
                   value={set.reps}
-                  onChangeText={(value) => updateSet(index, 'reps', value)}
+                  onChangeText={(value) => {
+                    updateSet(index, 'reps', value);
+                    if (error) {
+                      setError('');
+                    }
+                  }}
                 />
                 <TextInput
                   style={styles.setInput}
                   placeholder="kg"
                   keyboardType="decimal-pad"
+                  placeholderTextColor={COLORS.muted}
                   value={set.weight}
-                  onChangeText={(value) => updateSet(index, 'weight', value)}
+                  onChangeText={(value) => {
+                    updateSet(index, 'weight', value);
+                    if (error) {
+                      setError('');
+                    }
+                  }}
                 />
               </View>
             ))}
@@ -180,6 +221,8 @@ export default function ActiveWorkout() {
               <Text style={styles.addSetText}>+ Dodaj serie</Text>
             </TouchableOpacity>
           </View>
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <TouchableOpacity style={styles.addToWorkoutButton} onPress={addExerciseToWorkout}>
             <Text style={styles.addToWorkoutText}>Dodaj cwiczenie do treningu</Text>
@@ -203,72 +246,78 @@ export default function ActiveWorkout() {
         </View>
       )}
 
-      <Button title="Zapisz trening" onPress={saveWorkout} color="green" />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      <Button title="Zapisz trening" onPress={saveWorkout} color={COLORS.accent} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  timer: { fontSize: 24, textAlign: 'center', fontWeight: 'bold', marginVertical: 20 },
-  sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  container: { flex: 1, padding: 20, backgroundColor: COLORS.background },
+  timer: { fontSize: 24, textAlign: 'center', fontWeight: 'bold', marginVertical: 20, color: COLORS.text },
+  sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: COLORS.text },
   choiceWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   choiceButton: {
-    backgroundColor: '#f1f1f1',
+    backgroundColor: COLORS.surface,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
   },
-  choiceButtonActive: { backgroundColor: '#007AFF' },
-  choiceText: { color: '#333' },
+  choiceButtonActive: { backgroundColor: COLORS.accent },
+  choiceText: { color: COLORS.muted },
   choiceTextActive: { color: '#fff', fontWeight: '600' },
   customBox: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: COLORS.text },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.input,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 10,
+    color: COLORS.text,
   },
-  exerciseBox: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 12 },
+  exerciseBox: { backgroundColor: COLORS.surface, padding: 15, borderRadius: 10, marginBottom: 12 },
   setRow: {
     borderTopWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: COLORS.border,
     paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  setLabel: { width: 70, fontWeight: '600' },
+  setLabel: { width: 70, fontWeight: '600', color: COLORS.text },
   setInput: {
     flex: 1,
-    backgroundColor: '#f7f7f7',
+    backgroundColor: COLORS.input,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
     textAlign: 'center',
+    color: COLORS.text,
   },
   addSetButton: { marginTop: 12, alignItems: 'center', paddingVertical: 8 },
-  addSetText: { color: '#007AFF', fontWeight: '600' },
+  addSetText: { color: COLORS.accent, fontWeight: '600' },
   addExerciseButton: {
-    backgroundColor: '#eef4ff',
+    backgroundColor: COLORS.input,
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: 'center',
   },
-  addExerciseText: { color: '#1f5fbf', fontWeight: '600' },
+  addExerciseText: { color: COLORS.accent, fontWeight: '600' },
   addToWorkoutButton: {
-    backgroundColor: '#eef4ff',
+    backgroundColor: COLORS.input,
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
     marginBottom: 16,
   },
-  addToWorkoutText: { color: '#1f5fbf', fontWeight: '600' },
-  summaryBox: { backgroundColor: '#fff', borderRadius: 10, padding: 14, marginBottom: 16 },
-  summaryTitle: { fontWeight: '600', marginBottom: 8 },
+  addToWorkoutText: { color: COLORS.accent, fontWeight: '600' },
+  summaryBox: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 14, marginBottom: 16 },
+  summaryTitle: { fontWeight: '600', marginBottom: 8, color: COLORS.text },
   summaryItem: { marginBottom: 10 },
-  summaryName: { fontWeight: '600' },
-  summarySet: { marginTop: 4 },
+  summaryName: { fontWeight: '600', color: COLORS.text },
+  summarySet: { marginTop: 4, color: COLORS.muted },
+  errorText: { color: COLORS.error, fontWeight: '600', marginBottom: 10 },
 });
