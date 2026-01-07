@@ -16,9 +16,11 @@ export default function Dashboard() {
         <Text style={styles.cardTitle}>Ostatni trening</Text>
         {latest ? (
           <>
-            <Text style={styles.cardSubtitle}>{latest.exercise}</Text>
             <Text style={styles.cardSubtitle}>
               {new Date(latest.date).toLocaleDateString()}
+            </Text>
+            <Text style={styles.cardSubtitle}>
+              {latest.exercises.length} cwiczen
             </Text>
           </>
         ) : (
@@ -42,14 +44,18 @@ export default function Dashboard() {
             .reverse()
             .map((entry) => (
               <View key={entry.id} style={styles.card}>
-                <Text style={styles.cardTitle}>{entry.exercise}</Text>
-                <Text style={styles.cardSubtitle}>
+                <Text style={styles.cardTitle}>
                   {new Date(entry.date).toLocaleDateString()}
                 </Text>
-                {entry.sets.map((set, index) => (
-                  <Text key={`${entry.id}-${index}`} style={styles.historySet}>
-                    Seria {index + 1}: {set.reps || '-'} x {set.weight || '-'} kg
-                  </Text>
+                {entry.exercises.map((exercise, exerciseIndex) => (
+                  <View key={`${entry.id}-${exerciseIndex}`} style={styles.exerciseBlock}>
+                    <Text style={styles.exerciseName}>{exercise.name}</Text>
+                    {exercise.sets.map((set, setIndex) => (
+                      <Text key={`${entry.id}-${exerciseIndex}-${setIndex}`} style={styles.historySet}>
+                        Seria {setIndex + 1}: {set.reps || '-'} x {set.weight || '-'} kg
+                      </Text>
+                    ))}
+                  </View>
                 ))}
               </View>
             ))
@@ -68,5 +74,7 @@ const styles = StyleSheet.create({
   startButton: { backgroundColor: '#007AFF', padding: 18, borderRadius: 12, alignItems: 'center' },
   startButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
-  historySet: { marginTop: 6 },
+  exerciseBlock: { marginTop: 10 },
+  exerciseName: { fontWeight: '600' },
+  historySet: { marginTop: 4 },
 });

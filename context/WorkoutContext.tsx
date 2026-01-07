@@ -5,11 +5,15 @@ type WorkoutSet = {
   weight: string;
 };
 
+type WorkoutExercise = {
+  name: string;
+  sets: WorkoutSet[];
+};
+
 type WorkoutEntry = {
   id: string;
   date: string;
-  exercise: string;
-  sets: WorkoutSet[];
+  exercises: WorkoutExercise[];
 };
 
 type WorkoutContextValue = {

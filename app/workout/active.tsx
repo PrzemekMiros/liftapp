@@ -3,11 +3,15 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
 
+type WorkoutSet = { reps: string; weight: string };
+type WorkoutExercise = { name: string; sets: WorkoutSet[] };
+
 export default function ActiveWorkout() {
   const router = useRouter();
   const { recordWorkout } = useWorkout();
-  const [exercise, setExercise] = useState('');
-  const [sets, setSets] = useState([{ reps: '', weight: '' }]);
+  const [exerciseName, setExerciseName] = useState('');
+  const [sets, setSets] = useState<WorkoutSet[]>([{ reps: '', weight: '' }]);
+  const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
 
   const updateSet = (index: number, field: 'reps' | 'weight', value: string) => {
     setSets((prev) =>
@@ -19,25 +23,45 @@ export default function ActiveWorkout() {
     setSets((prev) => [...prev, { reps: '', weight: '' }]);
   };
 
-  const saveWorkout = () => {
-    const trimmedExercise = exercise.trim();
-    const normalizedSets = sets
+  const normalizeSets = (source: WorkoutSet[]) =>
+    source
       .map((set) => ({
         reps: set.reps.trim(),
         weight: set.weight.trim(),
       }))
       .filter((set) => set.reps || set.weight);
 
-    if (!trimmedExercise || normalizedSets.length === 0) {
+  const addExercise = () => {
+    const trimmedName = exerciseName.trim();
+    const normalizedSets = normalizeSets(sets);
+
+    if (!trimmedName || normalizedSets.length === 0) {
+      return;
+    }
+
+    setWorkoutExercises((prev) => [...prev, { name: trimmedName, sets: normalizedSets }]);
+    setExerciseName('');
+    setSets([{ reps: '', weight: '' }]);
+  };
+
+  const saveWorkout = () => {
+    const trimmedName = exerciseName.trim();
+    const normalizedSets = normalizeSets(sets);
+    const exercisesToSave =
+      trimmedName && normalizedSets.length > 0
+        ? [...workoutExercises, { name: trimmedName, sets: normalizedSets }]
+        : workoutExercises;
+
+    if (exercisesToSave.length === 0) {
       return;
     }
 
     recordWorkout({
       date: new Date().toISOString(),
-      exercise: trimmedExercise,
-      sets: normalizedSets,
+      exercises: exercisesToSave,
     });
-    setExercise('');
+    setWorkoutExercises([]);
+    setExerciseName('');
     setSets([{ reps: '', weight: '' }]);
     router.back();
   };
@@ -50,8 +74,8 @@ export default function ActiveWorkout() {
       <TextInput
         style={styles.input}
         placeholder="np. Wyciskanie hantli"
-        value={exercise}
-        onChangeText={setExercise}
+        value={exerciseName}
+        onChangeText={setExerciseName}
       />
 
       <Text style={styles.label}>Serie</Text>
@@ -79,6 +103,26 @@ export default function ActiveWorkout() {
           <Text style={styles.addSetText}>+ Dodaj serie</Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity style={styles.addExerciseButton} onPress={addExercise}>
+        <Text style={styles.addExerciseText}>Dodaj cwiczenie do treningu</Text>
+      </TouchableOpacity>
+
+      {workoutExercises.length > 0 && (
+        <View style={styles.summaryBox}>
+          <Text style={styles.summaryTitle}>Cwiczenia w treningu</Text>
+          {workoutExercises.map((exercise, index) => (
+            <View key={`${exercise.name}-${index}`} style={styles.summaryItem}>
+              <Text style={styles.summaryName}>{exercise.name}</Text>
+              {exercise.sets.map((set, setIndex) => (
+                <Text key={`${exercise.name}-${index}-${setIndex}`} style={styles.summarySet}>
+                  Seria {setIndex + 1}: {set.reps || '-'} x {set.weight || '-'} kg
+                </Text>
+              ))}
+            </View>
+          ))}
+        </View>
+      )}
 
       <Button title="Zapisz trening" onPress={saveWorkout} color="green" />
     </ScrollView>
@@ -120,4 +164,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   addSetText: { color: '#007AFF', fontWeight: '600' },
+  addExerciseButton: {
+    backgroundColor: '#eef4ff',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addExerciseText: { color: '#1f5fbf', fontWeight: '600' },
+  summaryBox: { backgroundColor: '#fff', borderRadius: 10, padding: 14, marginBottom: 16 },
+  summaryTitle: { fontWeight: '600', marginBottom: 8 },
+  summaryItem: { marginBottom: 10 },
+  summaryName: { fontWeight: '600' },
+  summarySet: { marginTop: 4 },
 });
