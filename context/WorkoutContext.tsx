@@ -16,22 +16,36 @@ type WorkoutEntry = {
   exercises: WorkoutExercise[];
 };
 
+type Exercise = {
+  id: string;
+  name: string;
+  bodyPart: string;
+};
+
 type WorkoutContextValue = {
-  exercises: { id: string; name: string; bodyPart: string }[];
-  setExercises: React.Dispatch<React.SetStateAction<{ id: string; name: string; bodyPart: string }[]>>;
+  exercises: Exercise[];
+  setExercises: React.Dispatch<React.SetStateAction<Exercise[]>>;
   history: WorkoutEntry[];
   setHistory: React.Dispatch<React.SetStateAction<WorkoutEntry[]>>;
   recordWorkout: (entry: Omit<WorkoutEntry, 'id'>) => void;
+  addExercise: (exercise: Omit<Exercise, 'id'>) => void;
 };
 
 const WorkoutContext = createContext<WorkoutContextValue | null>(null);
 
-export const WorkoutProvider = ({ children }: { children: React.ReactNode }) => {
-  const [exercises, setExercises] = useState([
-    { id: '1', name: 'Wyciskanie sztangi', bodyPart: 'Klatka piersiowa' },
-    { id: '2', name: 'Przysiady', bodyPart: 'Nogi' },
-  ]);
+const initialExercises: Exercise[] = [
+  { id: '1', name: 'Wyciskanie sztangi', bodyPart: 'Klatka' },
+  { id: '2', name: 'Wyciskanie hantli', bodyPart: 'Klatka' },
+  { id: '3', name: 'Przysiady', bodyPart: 'Nogi' },
+  { id: '4', name: 'Martwy ciag', bodyPart: 'Plecy' },
+  { id: '5', name: 'Podciaganie', bodyPart: 'Plecy' },
+  { id: '6', name: 'Wyciskanie zolnierskie', bodyPart: 'Barki' },
+  { id: '7', name: 'Uginanie ramion', bodyPart: 'Biceps' },
+  { id: '8', name: 'Prostowanie ramion', bodyPart: 'Triceps' },
+];
 
+export const WorkoutProvider = ({ children }: { children: React.ReactNode }) => {
+  const [exercises, setExercises] = useState<Exercise[]>(initialExercises);
   const [history, setHistory] = useState<WorkoutEntry[]>([]);
 
   const recordWorkout = (entry: Omit<WorkoutEntry, 'id'>) => {
@@ -41,8 +55,17 @@ export const WorkoutProvider = ({ children }: { children: React.ReactNode }) => 
     ]);
   };
 
+  const addExercise = (exercise: Omit<Exercise, 'id'>) => {
+    setExercises((prev) => [
+      ...prev,
+      { ...exercise, id: `${Date.now()}-${Math.random().toString(16).slice(2)}` },
+    ]);
+  };
+
   return (
-    <WorkoutContext.Provider value={{ exercises, setExercises, history, setHistory, recordWorkout }}>
+    <WorkoutContext.Provider
+      value={{ exercises, setExercises, history, setHistory, recordWorkout, addExercise }}
+    >
       {children}
     </WorkoutContext.Provider>
   );
